@@ -36,6 +36,7 @@ class ARViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationM
         locManager.startUpdatingLocation()
         initar()
         setobj()
+        
     }
     
     func setupLocationManager(){
@@ -47,17 +48,16 @@ class ARViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationM
     
     
     func initar(){
-       //arView.debugOptions = [.showStatistics, .showFeaturePoints,.showWorldOrigin]
+       arView.debugOptions = [.showStatistics, .showFeaturePoints,.showWorldOrigin]
         let configuration = ARWorldTrackingConfiguration()
        configuration.worldAlignment = .gravityAndHeading
        arView.session.run(configuration)
     }
     func setobj(){
-        let Aug = CalcAngle(pinlat, currentlat, pinlon, currentlon)
+        let Aug = judg()
         let anchor1 = AnchorEntity(world: Aug)
-        
         arView.scene.anchors.append(anchor1)
-         guard let model = try? Entity.load(named:"art.scnassets/tinko") else {return}
+        guard let model = try? Entity.load(named:"art.scnassets/tinko") else {return}
         let unko = SIMD3<Float>(100,100,100)
         model.scale = unko
         anchor1.addChild(model)
@@ -66,6 +66,9 @@ class ARViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationM
     func CalcAngle(_ pinlat1:Float ,_ currentlat2:Float,_ pinlon1:Float,_ currentlon2:Float) -> SIMD3<Float>{
         globaldz = (currentlat2 - pinlat1) * lat2km
         globaldx = -(currentlon2 - pinlon1) * lat2km
+        print("global")
+        print("\(globaldx)")
+        print("\(globaldz)")
         let data = SIMD3<Float>(globaldx,0,globaldz)
         return data
     }
@@ -76,60 +79,37 @@ class ARViewController: UIViewController,UIGestureRecognizerDelegate,CLLocationM
         let result = CalcAngle(pinlat, Float(nowlat), pinlon, Float(nowlon))
         let unkox = result.x
         let unkoz = result.z
-        judg1km(unkox, unkoz)
         }
     //２点の座標から距離をmで表示する
     func CalcDistance(_ Destination_lat:Double,_ Current_lat:Double,_ Destination_lon:Double,_ Current_lon:Double) -> Double{
-        
         let now:CLLocation = CLLocation(latitude: Current_lat, longitude: Current_lon)
         let pin:CLLocation = CLLocation(latitude: Destination_lat, longitude: Destination_lon)
         let Cdistance = pin.distance(from: now)
         return Cdistance
     }
-    
-    func First() ->Double{
-        let Current_lat = (locManager.location?.coordinate.latitude)!
-        let Current_lon = (locManager.location?.coordinate.longitude)!
+    func judg() ->SIMD3<Float>{
+        var newlat:Float = 0.0
+        var newlon:Float = 0.0
+        var data = SIMD3<Float>()
+        let Current_lat = Float((locManager.location?.coordinate.latitude)!)
+        let Current_lon = Float((locManager.location?.coordinate.longitude)!)
         print("nowlat:\(Current_lat)")
         print("now:lon:\(Current_lon)")
         print("pinlon:\(pinlon)")
         print("pinlat:\(pinlat)")
-        distance = CalcDistance(Double(pinlat), Current_lat, Double(pinlon), Current_lon)
+        distance = CalcDistance(Double(pinlat), Double(Current_lat), Double(pinlon), Double(Current_lon))
         print(distance)
-        return distance
+//        if distance <= 3000 && 1000 <= distance{
+//            print("4/1")
+//            newlat = pinlat/4
+//            newlon = pinlon/4
+//            print("\(newlat)")
+//            print("\(newlon)")
+//            data = CalcAngle(newlat, Current_lat, newlon, Current_lon)
+//        }else{
+            data = CalcAngle(pinlat, Current_lat, pinlon, Current_lon)
+        //}
+        return data
     }
-    
-    func judg1km(_ dx:Float,_ dz:Float) {
-        
-        var _dx:Float = dx
-        var _dz:Float = dz
-        
-        if _dx < 0 && _dz < 0{
-            _dx = -_dx
-            _dz = -_dz
-            km(_dx,_dz)
-        }else if _dx < 0{
-            _dx = -_dx
-            km(_dx,_dz)
-        }else if _dz < 0{
-            _dz = -_dz
-            km(_dx,_dz)
-        }else{
-            km(_dz,_dz)
-        }
-    }
-    func km(_ x:Float,_ z:Float){
-        let _1km:Float = 1000
-        if x > _1km && z > _1km{
-            let _x = x / _1km
-            let _z = z / _1km
-        }else if x > _1km{
-            let _x = x / _1km
-        }else if z > _1km{
-            let _z = z / _1km
-        }else{
-            
-        }
-        
-    }
+
 }
